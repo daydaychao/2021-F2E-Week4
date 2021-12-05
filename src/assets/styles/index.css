@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+}
+
+/* Home */
+* {
+  font-family: roboto, arial, sans-serif;
+  outline: none;
+}
+body {
+  background: #202020;
+  color: #fff;
+}
