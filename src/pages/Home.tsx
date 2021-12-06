@@ -2,7 +2,7 @@ import { ReactChild, ReactFragment, ReactPortal, useEffect, useLayoutEffect, use
 import { always, identity, map, memoizeWith, tap } from 'ramda'
 import { TypeFE, TypeUI, TypeKey } from '@/types'
 import * as V from 'victory'
-import { VictoryChart, VictoryStack, VictoryBar, VictoryAxis, VictoryTheme } from 'victory'
+import { VictoryChart, VictoryStack, VictoryBar, VictoryAxis, VictoryTheme, VictoryPie, VictoryTooltip } from 'victory'
 import useStore from '@/store'
 
 let UIAgeArray: any[] = []
@@ -46,6 +46,44 @@ const filterAges = (dataArray: string[]) => {
   })
   return Object.values(cache)
 }
+
+// 年齡薪水
+const filterAgesAndSalary = (dataArray: any[]) => {
+  // AGE
+  let groupSource = [
+    { age: 21, averageSalary: 0, totalSalary: 0, people: 0 },
+    { age: 26, averageSalary: 0, totalSalary: 0, people: 0 },
+    { age: 31, averageSalary: 0, totalSalary: 0, people: 0 },
+    { age: 36, averageSalary: 0, totalSalary: 0, people: 0 },
+    { age: 41, averageSalary: 0, totalSalary: 0, people: 0 },
+    { age: 46, averageSalary: 0, totalSalary: 0, people: 0 },
+    { age: 51, averageSalary: 0, totalSalary: 0, people: 0 }
+  ]
+  let ageArray = [21, 26, 31, 36, 41, 46, 51]
+  let ageTotalPeople = []
+
+  dataArray.forEach((item: any) => {
+    item.age.includes('21') && ageTotalPeople.push(item.age)
+  })
+
+  dataArray.forEach((item: any, index) => {
+    ageArray.forEach((num, i) => {
+      if (item.age.includes(String(num))) {
+        groupSource[i].age = num
+        groupSource[i].people += 1
+
+        if (item.company.salary.substring(2, 3) != '~') groupSource[i].totalSalary += Number(item.company.salary.substring(0, 3))
+        else if (item.company.salary.substring(2, 3) == '~') groupSource[i].totalSalary += Number(item.company.salary.substring(0, 2))
+      }
+    })
+  })
+
+  groupSource.forEach((item: any) => {
+    item.averageSalary = (item.totalSalary / item.people).toFixed(0)
+  })
+  return groupSource
+}
+
 const filterSalary = (dataArray: string[]) => {
   let cache = {
     a: 0,
@@ -97,6 +135,7 @@ const filterSalary = (dataArray: string[]) => {
   })
   return Object.values(cache)
 }
+
 const makeChartSource = (dataArray: string[]) => {
   let cache: any[] = []
   dataArray.forEach((item: string, index: number) => {
@@ -120,7 +159,6 @@ export function Home() {
     getAllData()
   }, [])
 
-  console.log('UISalary', UISalary)
   UIAgeArray = filterAges(UIAge)
   FEAgeArray = filterAges(FEAge)
   UIAgeSource = makeChartSource(UIAgeArray)
@@ -129,6 +167,10 @@ export function Home() {
   FESalaryArray = filterSalary(FESalary)
   UISalarySource = makeChartSource(UISalaryArray)
   FESalarySource = makeChartSource(FESalaryArray)
+
+  let FEAgeSalary: any[] = filterAgesAndSalary(FEData)
+
+  let UIAgeSalary: any[] = filterAgesAndSalary(UIData)
 
   return (
     <main className="py-4">
@@ -155,7 +197,7 @@ export function Home() {
         </div>
       </section>
 
-      <section className="flex flex-row flex-wrap md:flex-nowrap ">
+      <section className="flex flex-row flex-wrap md:flex-nowrap mb-2">
         <div className="bg-[#2c2c2c] p-4 mb-4 md:mb-0 md:mr-2">
           UI設計師 薪水分布 (純人數,沒有依照年資)
           <VictoryChart>
@@ -173,6 +215,33 @@ export function Home() {
             <VictoryAxis style={{ tickLabels: { fill: '#a7a7a7' } }} dependentAxis tickFormat={(x) => x + '人'} />
             <VictoryStack colorScale={['#67d6fb']}>
               <VictoryBar data={FESalarySource} x="rangeIndex" y="value" />
+            </VictoryStack>
+          </VictoryChart>
+        </div>
+      </section>
+
+      <section className="flex flex-row flex-wrap md:flex-nowrap mb-2">
+        <div className="bg-[#2c2c2c] p-4 mb-4 md:mb-0 md:mr-2">
+          UI設計師 年齡層 / 薪水
+          <br />
+          台灣總統642萬年薪
+          <br />
+          有位前輩拉高了台灣地表UI薪資,我們會努力der
+          <VictoryChart>
+            <VictoryAxis style={{ tickLabels: { fill: '#a7a7a7' } }} tickFormat={['21~25', '26~30', '31~35', '36~40', '41~45', '46~50', '51以上']} />
+            <VictoryAxis style={{ tickLabels: { fill: '#a7a7a7' } }} dependentAxis tickFormat={(money) => `${money}萬`} />
+            <VictoryStack colorScale={['#9effb0']}>
+              <VictoryBar data={UIAgeSalary} y="averageSalary" labelComponent={<VictoryTooltip pointerLength={20} />} />
+            </VictoryStack>
+          </VictoryChart>
+        </div>
+        <div className="bg-[#2c2c2c] p-4">
+          前端工程師 年齡層 / 薪水
+          <VictoryChart>
+            <VictoryAxis style={{ tickLabels: { fill: '#a7a7a7' } }} tickFormat={['21~25', '26~30', '31~35', '36~40', '41~45', '46~50', '51以上']} />
+            <VictoryAxis style={{ tickLabels: { fill: '#a7a7a7' } }} dependentAxis tickFormat={(money) => `${money}萬`} />
+            <VictoryStack colorScale={['#67d6fb']}>
+              <VictoryBar data={FEAgeSalary} y="averageSalary" labelComponent={<VictoryTooltip pointerLength={20} />} />
             </VictoryStack>
           </VictoryChart>
         </div>
